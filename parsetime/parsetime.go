@@ -1,0 +1,25 @@
+package parsetime
+
+//python-like str(p/f)time
+// ref: https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
+// ref https://pkg.go.dev/time#pkg-constants
+
+// Mon Jan 2 15:04:05 MST 2006
+var parseMap = map[string]string{
+	"%Y":     "2006",      // year
+	"%y":     "06",        // years (2digit)
+	"%d":     "02",        // day
+	"%m":     "01",        // month num
+	"%b":     "Jan",       // month abbrev
+	"%B":     "January",   //month full
+	"%H":     "15",        // hour (24 hr clock)
+	"%I":     "03",        // hour (12hr clock)
+	"%M":     "04",        //minute
+	"%S":     "05",        //second
+	"%milli": "000",       // milliseconds
+	"%micro": "000000",    // microseconds
+	"%nano":  "000000000", //nanosec
+
+	"%Z": "MST",   // timezone name
+	"%z": "-0700", // UTC offset
+}
