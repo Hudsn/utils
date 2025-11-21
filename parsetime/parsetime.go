@@ -1,11 +1,16 @@
 package parsetime
 
+import (
+	"strings"
+	"time"
+)
+
 //python-like str(p/f)time
 // ref: https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
 // ref https://pkg.go.dev/time#pkg-constants
 
 // Mon Jan 2 15:04:05 MST 2006
-var parseMap = map[string]string{
+var ParseMap = map[string]string{
 	"%Y":     "2006",      // year
 	"%y":     "06",        // years (2digit)
 	"%d":     "02",        // day
@@ -22,4 +27,20 @@ var parseMap = map[string]string{
 
 	"%Z": "MST",   // timezone name
 	"%z": "-0700", // UTC offset
+}
+
+func Strptime(format string, input string) (time.Time, error) {
+	return time.Parse(toGoLayout(format), input)
+}
+
+func Strftime(format string, t time.Time) string {
+	return t.Format(toGoLayout(format))
+}
+
+func toGoLayout(formatString string) string {
+	var goLayout string
+	for k, v := range ParseMap {
+		goLayout = strings.ReplaceAll(formatString, k, v)
+	}
+	return goLayout
 }
