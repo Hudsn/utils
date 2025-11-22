@@ -1,0 +1,144 @@
+package parsetime
+
+import "slices"
+
+type lexer struct {
+	input       []rune
+	currentChar rune
+	currentIdx  int
+	nextIdx     int
+}
+
+const nullchar = rune(0)
+
+func newLexer(input string) *lexer {
+	l := &lexer{
+		input:      []rune(input),
+		currentIdx: 0,
+		nextIdx:    0,
+	}
+	l.next()
+	return l
+}
+
+func (l *lexer) next() {
+	if l.nextIdx >= len(l.input) {
+		l.currentChar = nullchar
+	} else {
+		l.currentChar = l.input[l.nextIdx]
+	}
+	l.currentIdx = min(l.nextIdx, len(l.input)-1)
+	l.nextIdx = min(l.nextIdx+1, len(l.input))
+}
+
+func (l *lexer) peek() rune {
+	if l.nextIdx >= len(l.input) {
+		return nullchar
+	}
+	return l.input[l.nextIdx]
+}
+
+func (l *lexer) nextToken() token {
+
+	l.skipWhitespace()
+
+	switch l.currentChar {
+	case nullchar:
+		return token{tokenType: eof, start: l.currentIdx, end: l.nextIdx, value: ""}
+	case '%':
+		tok := l.handleShortcode()
+		l.next()
+		return tok
+	default:
+		return l.handleLiteral()
+	}
+}
+
+func (l *lexer) handleShortcode() token {
+	tok := token{
+		start: l.currentIdx,
+	}
+	if isDigit(l.peek()) {
+		return l.shortcodeHandleNumberModifier(tok)
+	}
+
+	return tok
+}
+
+func (l *lexer) shortcodeHandleNumberModifier(tok token) token {
+	l.next()
+	modifier := string(l.currentChar)
+	if isDigit(l.peek()) {
+		tok.tokenType = illegal
+		tok.end = l.nextIdx
+		tok.value = "numeric modifiers cannot be more than a single digit"
+		return tok
+	}
+	if l.peek() != 'N' { // the only time we should see digits is fractional seconds, which should be in the format %{digt}N
+		tok.tokenType = illegal
+		tok.end = l.nextIdx
+		tok.value = "numeric modifiers must be followed by the shortcode for fractional seconds (ex: '%9N')"
+		return tok
+	}
+	l.next() // now on "N"
+
+	tok.tokenType = fractional_seconds
+	tok.end = l.nextIdx
+	tok.value = modifier
+
+	return tok
+}
+
+func (l *lexer) handleLiteral() token {
+	start := l.currentIdx
+	value := []rune{}
+	for l.currentChar != nullchar && l.currentChar != '%' {
+		toAdd := l.currentChar
+		if l.currentChar == '\\' {
+			toAdd = l.handleEscapeRune()
+		}
+		value = append(value, toAdd)
+		l.next()
+	}
+
+	return token{
+		tokenType: literal,
+		start:     start,
+		end:       l.nextIdx,
+		value:     string(value),
+	}
+}
+func (l *lexer) handleEscapeRune() rune {
+	var ret rune
+	switch l.peek() {
+	case '\\':
+		ret = '\\'
+	case 't':
+		ret = '\t'
+	case 'n':
+		ret = '\n'
+	case '%':
+		ret = '%'
+	default:
+	}
+	l.next()
+	return ret
+}
+
+func (l *lexer) skipWhitespace() {
+	if slices.Contains([]rune{'\n', '\r', '\t', ' '}, l.currentChar) {
+		l.next()
+	}
+}
+
+// helpers
+func isDigit(char rune) bool {
+	return '0' <= char && char <= '9'
+}
+
+func (l *lexer) stringFromToken(t token) string {
+	if t.tokenType == eof {
+		return ""
+	}
+	return string(l.input[t.start:t.end])
+}
