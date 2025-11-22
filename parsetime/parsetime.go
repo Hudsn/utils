@@ -1,6 +1,8 @@
 package parsetime
 
 import (
+	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -34,13 +36,18 @@ func Strptime(format string, input string) (time.Time, error) {
 }
 
 func Strftime(format string, t time.Time) string {
+	ti, err := time.Parse(time.StampMicro, "Feb 12 01:02:03.123456")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("SDFSDF: ", ti.Nanosecond())
 	return t.Format(toGoLayout(format))
 }
 
 func toGoLayout(formatString string) string {
-	var goLayout string
+	var goLayout string = formatString
 	for k, v := range ParseMap {
-		goLayout = strings.ReplaceAll(formatString, k, v)
+		goLayout = strings.ReplaceAll(goLayout, k, v)
 	}
 	return goLayout
 }
