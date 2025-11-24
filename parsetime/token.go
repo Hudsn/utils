@@ -7,7 +7,7 @@ const (
 	illegal
 	eof
 	literal
-	fractional_seconds
+	directive
 )
 
 type token struct {
@@ -16,6 +16,8 @@ type token struct {
 	end       int
 	value     string
 }
+
+//
 
 // use similar to Ruby's strftime
 // https://ruby-doc.org/core-2.6.4/Time.html

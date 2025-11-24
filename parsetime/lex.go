@@ -1,6 +1,9 @@
 package parsetime
 
-import "slices"
+import (
+	"fmt"
+	"slices"
+)
 
 type lexer struct {
 	input       []rune
@@ -27,7 +30,7 @@ func (l *lexer) next() {
 	} else {
 		l.currentChar = l.input[l.nextIdx]
 	}
-	l.currentIdx = min(l.nextIdx, len(l.input)-1)
+	l.currentIdx = min(l.nextIdx, len(l.input))
 	l.nextIdx = min(l.nextIdx+1, len(l.input))
 }
 
@@ -39,8 +42,6 @@ func (l *lexer) peek() rune {
 }
 
 func (l *lexer) nextToken() token {
-
-	l.skipWhitespace()
 
 	switch l.currentChar {
 	case nullchar:
@@ -66,9 +67,9 @@ func (l *lexer) handleShortcode() token {
 }
 
 func (l *lexer) shortcodeHandleNumberModifier(tok token) token {
-	l.next()
-	modifier := string(l.currentChar)
-	if isDigit(l.peek()) {
+	start := l.currentIdx
+	l.next()               // now on char after %
+	if isDigit(l.peek()) { // 2 digits in a row are not allowed
 		tok.tokenType = illegal
 		tok.end = l.nextIdx
 		tok.value = "numeric modifiers cannot be more than a single digit"
@@ -82,9 +83,9 @@ func (l *lexer) shortcodeHandleNumberModifier(tok token) token {
 	}
 	l.next() // now on "N"
 
-	tok.tokenType = fractional_seconds
+	tok.tokenType = directive
 	tok.end = l.nextIdx
-	tok.value = modifier
+	tok.value = string(l.input[start:l.nextIdx])
 
 	return tok
 }
@@ -92,10 +93,29 @@ func (l *lexer) shortcodeHandleNumberModifier(tok token) token {
 func (l *lexer) handleLiteral() token {
 	start := l.currentIdx
 	value := []rune{}
-	for l.currentChar != nullchar && l.currentChar != '%' {
+	shouldContineLoop := true
+	for l.currentChar != nullchar && shouldContineLoop {
 		toAdd := l.currentChar
-		if l.currentChar == '\\' {
-			toAdd = l.handleEscapeRune()
+		switch l.currentChar {
+		case '%':
+			if l.peek() == '%' {
+				toAdd = '%'
+			} else {
+				shouldContineLoop = false
+				continue
+			}
+		case '\\':
+			var ok bool
+			toAdd, ok = l.handleEscapeRune()
+			if !ok {
+				return token{
+					tokenType: illegal,
+					start:     start,
+					end:       l.nextIdx,
+					value:     fmt.Sprintf("unrecognized escape sequence: %s", string(l.input[l.currentIdx:l.nextIdx+1])),
+				}
+			}
+		default:
 		}
 		value = append(value, toAdd)
 		l.next()
@@ -108,8 +128,8 @@ func (l *lexer) handleLiteral() token {
 		value:     string(value),
 	}
 }
-func (l *lexer) handleEscapeRune() rune {
-	var ret rune
+func (l *lexer) handleEscapeRune() (rune, bool) {
+	var ret rune = l.currentChar
 	switch l.peek() {
 	case '\\':
 		ret = '\\'
@@ -117,18 +137,17 @@ func (l *lexer) handleEscapeRune() rune {
 		ret = '\t'
 	case 'n':
 		ret = '\n'
-	case '%':
-		ret = '%'
+	case 'r':
+		ret = '\r'
 	default:
+		return nullchar, false
 	}
-	l.next()
-	return ret
+	l.next() // to escaped char
+	return ret, true
 }
 
-func (l *lexer) skipWhitespace() {
-	if slices.Contains([]rune{'\n', '\r', '\t', ' '}, l.currentChar) {
-		l.next()
-	}
+func isLegalChar(char rune) bool {
+	return slices.Contains([]rune{'\r', '\n'}, char)
 }
 
 // helpers
