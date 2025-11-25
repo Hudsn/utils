@@ -56,38 +56,59 @@ func (l *lexer) nextToken() token {
 }
 
 func (l *lexer) handleShortcode() token {
-	tok := token{
-		start: l.currentIdx,
-	}
+
+	start := l.currentIdx
+
 	if isDigit(l.peek()) {
-		return l.shortcodeHandleNumberModifier(tok)
+		return l.shortcodeHandleNumberModifier() // ends on "last char of shortcode"
+	}
+	if !slices.Contains(directiveCharList, l.peek()) {
+		return token{
+			tokenType: illegal,
+			start:     start,
+			end:       l.nextIdx,
+			value:     fmt.Sprintf("invalid shortcode: %s", string(l.input[start:l.nextIdx+1])),
+		}
 	}
 
-	return tok
+	l.next() // on directive character
+
+	return token{
+		tokenType: directive,
+		start:     start,
+		end:       l.nextIdx,
+		value:     string(l.input[start:l.nextIdx]),
+	}
 }
 
-func (l *lexer) shortcodeHandleNumberModifier(tok token) token {
+func (l *lexer) shortcodeHandleNumberModifier() token {
 	start := l.currentIdx
 	l.next()               // now on char after %
 	if isDigit(l.peek()) { // 2 digits in a row are not allowed
-		tok.tokenType = illegal
-		tok.end = l.nextIdx
-		tok.value = "numeric modifiers cannot be more than a single digit"
-		return tok
+		return token{
+			tokenType: illegal,
+			start:     start,
+			end:       l.nextIdx,
+			value:     "numeric modifiers cannot be more than a single digit",
+		}
 	}
 	if l.peek() != 'N' { // the only time we should see digits is fractional seconds, which should be in the format %{digt}N
-		tok.tokenType = illegal
-		tok.end = l.nextIdx
-		tok.value = "numeric modifiers must be followed by the shortcode for fractional seconds (ex: '%9N')"
-		return tok
+		return token{
+			tokenType: illegal,
+			start:     start,
+			end:       l.nextIdx,
+			value:     "numeric modifiers must be followed by the shortcode for fractional seconds (ex: '%9N')",
+		}
 	}
 	l.next() // now on "N"
 
-	tok.tokenType = directive
-	tok.end = l.nextIdx
-	tok.value = string(l.input[start:l.nextIdx])
+	return token{
+		tokenType: directive,
+		start:     start,
+		end:       l.nextIdx,
+		value:     string(l.input[start:l.nextIdx]),
+	}
 
-	return tok
 }
 
 func (l *lexer) handleLiteral() token {

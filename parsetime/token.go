@@ -17,12 +17,13 @@ type token struct {
 	value     string
 }
 
+var directiveCharList = []rune{'N'}
+
 //
 
 // use similar to Ruby's strftime
 // https://ruby-doc.org/core-2.6.4/Time.html
 // 	"N", //fractional seconds in digits 9 or fewer digits, representing nanosec, can be %3N (milli), %6 (micro), %9N (nano or larger)
-// 	"L", // millisecond
 // 	"S", //  01, 02, 25, 99
 
 // 	// year
