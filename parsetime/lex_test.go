@@ -8,14 +8,14 @@ func TestLexLiteral(t *testing.T) {
 	input := `justa\\random\nmultilinestring`
 	cases := []lexTestCase{
 		{
-			tokenType:  literal,
+			tokenType:  tok_literal,
 			value:      "justa\\random\nmultilinestring",
 			start:      0,
 			end:        30,
 			rangeValue: input,
 		},
 		{
-			tokenType:  eof,
+			tokenType:  tok_eof,
 			value:      "",
 			start:      30,
 			end:        30,
@@ -29,21 +29,21 @@ func TestLexFractionalSec(t *testing.T) {
 	input := "%4N"
 	cases := []lexTestCase{
 		{
-			tokenType:  directive,
+			tokenType:  tok_directive,
 			value:      "%4N",
 			start:      0,
 			end:        3,
 			rangeValue: "%4N",
 		},
 		{
-			tokenType:  eof,
+			tokenType:  tok_eof,
 			value:      "",
 			start:      3,
 			end:        3,
 			rangeValue: "",
 		},
 		{
-			tokenType:  eof,
+			tokenType:  tok_eof,
 			value:      "",
 			start:      3,
 			end:        3,

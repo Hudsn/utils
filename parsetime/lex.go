@@ -45,7 +45,7 @@ func (l *lexer) nextToken() token {
 
 	switch l.currentChar {
 	case nullchar:
-		return token{tokenType: eof, start: l.currentIdx, end: l.nextIdx, value: ""}
+		return token{tokenType: tok_eof, start: l.currentIdx, end: l.nextIdx, value: ""}
 	case '%':
 		tok := l.handleShortcode()
 		l.next()
@@ -64,7 +64,7 @@ func (l *lexer) handleShortcode() token {
 	}
 	if !slices.Contains(directiveCharList, l.peek()) {
 		return token{
-			tokenType: illegal,
+			tokenType: tok_illegal,
 			start:     start,
 			end:       l.nextIdx,
 			value:     fmt.Sprintf("invalid shortcode: %s", string(l.input[start:l.nextIdx+1])),
@@ -74,7 +74,7 @@ func (l *lexer) handleShortcode() token {
 	l.next() // on directive character
 
 	return token{
-		tokenType: directive,
+		tokenType: tok_directive,
 		start:     start,
 		end:       l.nextIdx,
 		value:     string(l.input[start:l.nextIdx]),
@@ -86,7 +86,7 @@ func (l *lexer) shortcodeHandleNumberModifier() token {
 	l.next()               // now on char after %
 	if isDigit(l.peek()) { // 2 digits in a row are not allowed
 		return token{
-			tokenType: illegal,
+			tokenType: tok_illegal,
 			start:     start,
 			end:       l.nextIdx,
 			value:     "numeric modifiers cannot be more than a single digit",
@@ -94,7 +94,7 @@ func (l *lexer) shortcodeHandleNumberModifier() token {
 	}
 	if l.peek() != 'N' { // the only time we should see digits is fractional seconds, which should be in the format %{digt}N
 		return token{
-			tokenType: illegal,
+			tokenType: tok_illegal,
 			start:     start,
 			end:       l.nextIdx,
 			value:     "numeric modifiers must be followed by the shortcode for fractional seconds (ex: '%9N')",
@@ -103,7 +103,7 @@ func (l *lexer) shortcodeHandleNumberModifier() token {
 	l.next() // now on "N"
 
 	return token{
-		tokenType: directive,
+		tokenType: tok_directive,
 		start:     start,
 		end:       l.nextIdx,
 		value:     string(l.input[start:l.nextIdx]),
@@ -130,7 +130,7 @@ func (l *lexer) handleLiteral() token {
 			toAdd, ok = l.handleEscapeRune()
 			if !ok {
 				return token{
-					tokenType: illegal,
+					tokenType: tok_illegal,
 					start:     start,
 					end:       l.nextIdx,
 					value:     fmt.Sprintf("unrecognized escape sequence: %s", string(l.input[l.currentIdx:l.nextIdx+1])),
@@ -143,7 +143,7 @@ func (l *lexer) handleLiteral() token {
 	}
 
 	return token{
-		tokenType: literal,
+		tokenType: tok_literal,
 		start:     start,
 		end:       l.nextIdx,
 		value:     string(value),
@@ -177,7 +177,7 @@ func isDigit(char rune) bool {
 }
 
 func (l *lexer) stringFromToken(t token) string {
-	if t.tokenType == eof {
+	if t.tokenType == tok_eof {
 		return ""
 	}
 	return string(l.input[t.start:t.end])
