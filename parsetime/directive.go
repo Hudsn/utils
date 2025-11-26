@@ -61,7 +61,6 @@ func (dr *directiveRegistry) generateDefaultRegistry() {
 		useNumericModifiers: true,
 		useTextModifiers:    false,
 		char:                'Y',
-		overrideModifiers:   nil,
 		category:            dcat_year,
 	}
 	dr.addInfo(add)
